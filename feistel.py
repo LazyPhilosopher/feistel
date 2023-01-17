@@ -8,7 +8,7 @@ import hashlib
 
 KEYS = []
 ROUNDS = 4
-STEP = 256
+STEP = 1024
 
 def init_keys():
 	global KEYS
@@ -50,7 +50,7 @@ def encode_text():
 	global STEP
 	# Open file
 	plain_file = open(filename, "r+")
-	cipher_file = open("cipher.bin", "w")
+	cipher_file = open("cipher.txt", "w")
 
 	# Read all lines in the file
 	byte_step = int(STEP/8)
@@ -69,18 +69,29 @@ def encode_text():
 
 		line_seg = line[:byte_step]
 		del line[:byte_step]
-		print(f"============================================================================")
-		encoded = feistel(KEYS, str(line_seg), mode="encode").encode('unicode_escape')
-		print(f"PLAIN: {str(line_seg)}")
-		print(f"ENCODED: {encoded}")
-		print(f"DECODED: {feistel(KEYS, encoded.decode('unicode-escape'), mode='decode')}")
-		print(f"============================================================================")
-		
-		# print(''.join('{:02x}'.format(x) for x in line_seg) + "\t" + str(line_seg))
-		# print(encoded.encode('unicode_escape').decode(), end=f"\n{'-'*100}\n")
-		
-	# encoded = feistel(KEYS, "Hello World!", mode="encode").encode('unicode_escape')
-	# print(encoded)
-	# print(feistel(KEYS, encoded.decode('unicode-escape'), mode="decode"))
+		encoded = feistel(KEYS, line_seg.decode(), mode="encode").encode('unicode_escape')
+		cipher_file.write(str(encoded, "utf-8") + "\n")
+
+def decode_text():
+	init_keys()
+
+	filename = "decoded_output.txt"
+	global STEP
+
+	# Open file
+	plain_file = open(filename, "w")
+	cipher_file = open("cipher.txt", "r")
+
+	eof = False
+	line = cipher_file.readline().rstrip('\n')
+	while not eof:
+		line = bytearray(line.encode("utf-8"))
+		decoded = feistel(KEYS, line.decode('unicode-escape'), mode="decode")
+		print(decoded)
+		plain_file.write(decoded)
+		line = cipher_file.readline().rstrip('\n')
+		if line == "":
+			eof = True
 
 encode_text()
+decode_text()
